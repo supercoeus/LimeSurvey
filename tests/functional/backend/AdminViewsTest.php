@@ -13,6 +13,9 @@
 
 namespace ls\tests\controllers;
 
+use CDbException;
+use CException;
+use Exception;
 use ls\tests\TestBaseClassView;
 
 /**
@@ -56,14 +59,17 @@ class AdminViewsTest extends TestBaseClassView
     }
 
     /**
-     * @param string $name
-     * @param array$view
-     * @dataProvider addBaseViews
+     * Function is testing the adminviews.
      * 
+     * @param string $name name
+     * @param array  $view view
+     * 
+     * @return       void
+     * @dataProvider addBaseViews
      */
     public function testAdminViews($name, $view)
     {
-        if ($name=='login') {
+        if ($name === 'login') {
             // skip login
             $this->assertTrue(true);
             return;
@@ -72,23 +78,30 @@ class AdminViewsTest extends TestBaseClassView
     }
 
     /**
-     * @param string $name
-     * @param array $view
+     * Function is testing admin survey views.
+     * 
+     * @param string $name name
+     * @param array  $view views
+     * 
+     * @return       void
      * @dataProvider addSurveyViews
      * 
-     * TODO: Marked as incomplete cause the routes for the views are wrong.
+     * @throws CDbException
+     * @throws CException
+     * @throws Exception
+     *
      */
     public function testAdminSurveyViews($name, $view)
     {
         if (isset($view['import_id'])) {
             // we'll change the survey in the middle of test
-            if(self::$testSurvey){
+            if (self::$testSurvey) {
                 self::$testSurvey->delete();
             }
             $surveyFile = self::$surveysFolder . '/limesurvey_survey_'.$view['import_id'].'.lss';
             self::importSurvey($surveyFile);
 
-            if(isset($view['activate']) && $view['activate'] ){
+            if (isset($view['activate']) && $view['activate']) {
                 $activator = new \SurveyActivator(self::$testSurvey);
                 $activator->activate();
                 \Token::createTable(self::$surveyId);
@@ -103,10 +116,17 @@ class AdminViewsTest extends TestBaseClassView
         }
         if (isset($view['questionType'])) {
             $question = self::$testSurvey->findQuestionByType($view['questionType']);
-            if(empty($question)){
-                throw new \Exception('Question not found');
+            if ($question === null) {
+                throw new Exception('Question not found');
             }
-            $view['route'] = ReplaceFields($view['route'], ['{QID}'=> $question->qid,'{GID}'=> $question->gid,'{SID}'=> self::$testSurvey->primaryKey]);
+            $view['route'] = ReplaceFields(
+                $view['route'],
+                [
+                    '{QID}'=> $question->qid,
+                    '{GID}'=> $question->gid,
+                    '{SID}'=> self::$testSurvey->primaryKey
+                ]
+            );
 
         }
         $view['route'] = ReplaceFields($view['route'], ['{SID}'=> self::$testSurvey->primaryKey]);
@@ -114,8 +134,9 @@ class AdminViewsTest extends TestBaseClassView
     }
 
     /**
-     * @param string $name
-     * @param array$view
+     * @param string $name name
+     * @param array  $view view
+     *
      * @dataProvider addSettingsViews
      */
     public function testSettingsViews($name, $view)
@@ -124,26 +145,28 @@ class AdminViewsTest extends TestBaseClassView
     }
 
     /**
-     * @param string $name
-     * @param array$view
+     * @param string $name name
+     * @param array  $view view
+     *
      * @dataProvider addUsersViews
      */
-    public function testUserViews($name,$view){
+    public function testUserViews($name, $view)
+    {
         // use Admin user
         $uid = 1;
         // non-adminuser for some views
-        if(in_array($name,['setUserPermissions','setUserTemplates'])){
-            // FIXME need to crate another user
+        if (in_array($name, ['setUserPermissions','setUserTemplates'])) {
+            // FIXME need to create another user
             $this->markTestSkipped();
             $uid = 2;
         }
-        $view['route'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
+        $view['route'] = ReplaceFields($view['route'], ['{UID}'=>$uid]);
         $this->findViewTag($name, $view);
     }
 
     /**
-     * @param string $name
-     * @param array$view
+     * @param string $name name
+     * @param array  $view view
      * @dataProvider addGeneralSettingsViews
      */
     public function testGeneralSettingsViews($name, $view)
@@ -152,11 +175,12 @@ class AdminViewsTest extends TestBaseClassView
     }
 
     /**
-     * @param string $name
-     * @param array$view
+     * @param string $name name
+     * @param array  $view view
      * @dataProvider addParticipantsViews
      */
-    public function testParticipantsViews($name,$view){
+    public function testParticipantsViews($name, $view)
+    {
         $this->findViewTag($name, $view);
     }
 }
